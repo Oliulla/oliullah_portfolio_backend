@@ -11,7 +11,7 @@ app.use(express.json());
 
 // db
 const uri = `mongodb+srv://${process.env.db_user}:${process.env.db_pass}@cluster0.g9drewa.mongodb.net/?retryWrites=true&w=majority`;
-console.log(uri);
+// console.log(uri);
 const client = new MongoClient(uri, {
   useNewUrlParser: true,
   useUnifiedTopology: true,
@@ -20,19 +20,41 @@ const client = new MongoClient(uri, {
 
 async function dbAdmin() {
   try {
-    const projectsDetailsCollection = client.db("portfolio").collection("projectDetails");
+    const projectsDetailsCollection = client
+      .db("portfolio")
+      .collection("projectDetails");
+    const projectsCollection = client.db("portfolio").collection("projects");
 
-    app.get("/project/:title", async(req, res) => {
-        // console.log(req.params);
-        const title = req.params.title;
-        const allDetails = await projectsDetailsCollection.find({}).toArray();
-        // console.log(allDetails);
-        const filter = allDetails.filter(allDetail => allDetail.title === title);
-        const details = filter[0].imgs;
-        // console.log(details);
-        res.send([title, details]);
-    })
+    app.get("/projects", async (req, res) => {
+      try {
+        const projects = await projectsCollection.find({}).toArray();
+        if (projects) {
+          res.json({
+            status: true,
+            message: "projects got successfully",
+            data: projects,
+          });
+        } else {
+          res.json({ status: false, message: "data got failed", data: [] });
+        }
+      } catch (error) {
+        res.json({ status: false, message: error.message });
+      }
+    });
 
+    // send specific projects details
+    app.get("/project/:title", async (req, res) => {
+      // console.log(req.params);
+      const title = req.params.title;
+      const allDetails = await projectsDetailsCollection.find({}).toArray();
+      // console.log(allDetails);
+      const filter = allDetails.filter(
+        (allDetail) => allDetail.title === title
+      );
+      const details = filter[0].imgs;
+      // console.log(details);
+      res.send([title, details]);
+    });
   } finally {
   }
 }
